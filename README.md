@@ -1,0 +1,257 @@
+bash
+
+cat << 'PYEOF' > /tmp/gen_data.py
+import json, random, datetime
+
+random.seed(42)
+
+# ── Names pool (Brazilian) ────────────────────────────────────────────────────
+first_names = [
+    "Ana","Beatriz","Camila","Daniela","Eduarda","Fernanda","Gabriela","Helena",
+    "Isabella","Juliana","Karoline","Larissa","Mariana","Natália","Olivia",
+    "Patricia","Renata","Sabrina","Tatiane","Valentina","Amanda","Bruna",
+    "Carolina","Débora","Eliane","Fabiana","Giovanna","Heloisa","Iris","Jessica",
+    "Kelly","Leticia","Mônica","Nadine","Priscila","Rafaela","Sandra","Thais",
+    "Ursula","Vanessa","Aline","Bianca","Cristina","Diana","Emilia","Flavia",
+    "Gisele","Hannah","Ingrid","Jaqueline","Luana","Marta","Nathalia","Paula",
+    "Roberta","Simone","Taiane","Veronica","Wanessa","Yara","Zelia","Alice",
+    "Bárbara","Claudia","Denise","Eva","Francielly","Graziela","Ivana","Joana",
+    "Karina","Luciana","Miriam","Noemi","Raquel","Selma","Tania","Viviane"
+]
+last_names = [
+    "Silva","Santos","Oliveira","Souza","Rodrigues","Ferreira","Alves","Pereira",
+    "Lima","Gomes","Costa","Ribeiro","Martins","Carvalho","Almeida","Lopes",
+    "Sousa","Fernandes","Vieira","Barbosa","Rocha","Dias","Nascimento","Andrade",
+    "Moreira","Nunes","Marques","Machado","Mendes","Freitas","Cardoso","Ramos",
+    "Moraes","Araujo","Castro","Correia","Pinto","Teixeira","Azevedo","Campos",
+    "Monteiro","Cruz","Cavalcanti","Pinheiro","Braga","Borges","Tavares","Faria"
+]
+
+services = [
+    {"name":"Corte feminino","price":80,"dur":60,"cat":"Cabelo"},
+    {"name":"Corte + escova","price":120,"dur":90,"cat":"Cabelo"},
+    {"name":"Escova progressiva","price":280,"dur":180,"cat":"Química"},
+    {"name":"Coloração","price":200,"dur":150,"cat":"Química"},
+    {"name":"Mechas/Luzes","price":350,"dur":210,"cat":"Química"},
+    {"name":"Hidratação","price":90,"dur":60,"cat":"Tratamento"},
+    {"name":"Cauterização","price":150,"dur":90,"cat":"Tratamento"},
+    {"name":"Manicure","price":40,"dur":45,"cat":"Unhas"},
+    {"name":"Pedicure","price":50,"dur":60,"cat":"Unhas"},
+    {"name":"Manicure + Pedicure","price":80,"dur":90,"cat":"Unhas"},
+    {"name":"Sobrancelha design","price":35,"dur":30,"cat":"Estética"},
+    {"name":"Depilação facial","price":45,"dur":30,"cat":"Estética"},
+    {"name":"Maquiagem social","price":120,"dur":60,"cat":"Maquiagem"},
+    {"name":"Penteado","price":100,"dur":90,"cat":"Cabelo"},
+    {"name":"Botox capilar","price":180,"dur":120,"cat":"Tratamento"},
+]
+
+neighborhoods = [
+    "Centro","Jardins","Vila Madalena","Moema","Pinheiros","Itaim Bibi",
+    "Brooklin","Santo André","Santana","Lapa","Perdizes","Vila Mariana",
+    "Ipiranga","Tatuapé","Penha"
+]
+
+today = datetime.date.today()
+current_month = today.month
+
+# ── Generate 200 clients ──────────────────────────────────────────────────────
+clients = []
+used_names = set()
+
+for i in range(200):
+    fn = random.choice(first_names)
+    ln = random.choice(last_names)
+    while fn + ln in used_names:
+        fn = random.choice(first_names)
+        ln = random.choice(last_names)
+    used_names.add(fn + ln)
+
+    birth_month = random.randint(1, 12)
+    birth_day   = random.randint(1, 28)
+    birth_year  = random.randint(1975, 2003)
+    birth_str   = f"{birth_year:04d}-{birth_month:02d}-{birth_day:02d}"
+
+    ddd = random.choice(["11","11","11","21","31","41","51","61","71","81","85"])
+    phone = f"({ddd}) 9{random.randint(1000,9999)}-{random.randint(1000,9999)}"
+
+    status = random.choices(
+        ["vip","ativo","ativo","ativo","ativo","inativo"],
+        weights=[10,50,50,50,50,10]
+    )[0]
+
+    since_days   = random.randint(30, 900)
+    first_visit  = today - datetime.timedelta(days=since_days)
+
+    # Last visit — between 7 and 60 days ago for active, more for inactive
+    if status == "inativo":
+        last_days_ago = random.randint(90, 300)
+    else:
+        last_days_ago = random.randint(7, 55)
+    last_visit = today - datetime.timedelta(days=last_days_ago)
+
+    visits = random.randint(2, 40) if status != "inativo" else random.randint(1, 5)
+
+    # Primary services
+    fav_services = random.sample(services, k=random.randint(1, 4))
+    avg_ticket   = round(sum(s["price"] for s in fav_services) / len(fav_services) * random.uniform(0.9,1.3), 2)
+    total_spent  = round(avg_ticket * visits * random.uniform(0.8, 1.2), 2)
+
+    # Next appointment
+    has_appointment = (status in ["ativo","vip"]) and random.random() > 0.4
+    if has_appointment:
+        appt_days = random.randint(1, 30)
+        appt_date = today + datetime.timedelta(days=appt_days)
+        appt_svc  = random.choice(fav_services)["name"]
+    else:
+        appt_date = None
+        appt_svc  = None
+
+    # Observations
+    obs_pool = [
+        "Prefere horário matutino","Alérgica a amônia","Cabelo fino — usar produtos leves",
+        "VIP — sempre avisar com 2 dias de antecedência","Prefere a profissional Ana",
+        "Traz a filha junto","Paga sempre no cartão","Chegou por indicação de Mariana Silva",
+        "Quer atingir loiro platinado","Cabelo com histórico de química excessiva",
+        "Sensível ao couro cabeludo","Prefere atendimento aos sábados",
+        "Interesse em tratamentos capilares premium","Pontual e educada",
+        "Solicitar confirmação por WhatsApp","Alergia a látex (luvas)","Cliente fiel há 3+ anos"
+    ]
+    obs = random.choice(obs_pool) if random.random() > 0.3 else ""
+
+    clients.append({
+        "id": i + 1,
+        "name": f"{fn} {ln}",
+        "phone": phone,
+        "email": f"{fn.lower()}.{ln.lower().replace(' ','')}@{'gmail' if random.random()>0.3 else 'hotmail'}.com",
+        "birthDate": birth_str,
+        "birthMonth": birth_month,
+        "birthDay": birth_day,
+        "neighborhood": random.choice(neighborhoods),
+        "status": status,
+        "firstVisit": first_visit.isoformat(),
+        "lastVisit": last_visit.isoformat(),
+        "visits": visits,
+        "totalSpent": total_spent,
+        "avgTicket": round(avg_ticket, 2),
+        "favoriteServices": [s["name"] for s in fav_services],
+        "nextAppointment": appt_date.isoformat() if appt_date else None,
+        "nextService": appt_svc,
+        "observation": obs,
+    })
+
+# ── Generate transactions (6 months) ─────────────────────────────────────────
+transactions = []
+tx_id = 1
+
+for m_offset in range(5, -1, -1):
+    month_date = today.replace(day=1) - datetime.timedelta(days=m_offset * 30)
+    m = month_date.month
+    y = month_date.year
+
+    # How many transactions this month
+    n_tx = random.randint(280, 420) if m_offset <= 1 else random.randint(200, 350)
+
+    for _ in range(n_tx):
+        client  = random.choice([c for c in clients if c["status"] != "inativo"])
+        service = random.choice(services)
+        day     = random.randint(1, 28)
+        try:
+            d = datetime.date(y, m, day)
+        except:
+            d = datetime.date(y, m, 28)
+
+        discount = random.choice([0,0,0,0,5,10,15])
+        final    = round(service["price"] * (1 - discount/100), 2)
+        pay_meth = random.choices(
+            ["Cartão crédito","Cartão débito","Pix","Dinheiro"],
+            weights=[35,25,30,10]
+        )[0]
+
+        transactions.append({
+            "id":       tx_id,
+            "clientId": client["id"],
+            "clientName": client["name"],
+            "service":  service["name"],
+            "category": service["cat"],
+            "price":    service["price"],
+            "discount": discount,
+            "final":    final,
+            "date":     d.isoformat(),
+            "month":    f"{y:04d}-{m:02d}",
+            "payment":  pay_meth,
+            "duration": service["dur"],
+        })
+        tx_id += 1
+
+# ── Generate expenses ─────────────────────────────────────────────────────────
+expense_cats = [
+    ("Produtos capilares",   [800,1200]),
+    ("Aluguel",              [2800,2800]),
+    ("Energia elétrica",     [320,480]),
+    ("Produtos de limpeza",  [150,250]),
+    ("Material escritório",  [80,160]),
+    ("Marketing",            [200,500]),
+    ("Manutenção equipamentos",[100,300]),
+    ("Salários",             [4500,5500]),
+    ("Contabilidade",        [250,250]),
+    ("Internet/Telefone",    [150,200]),
+]
+
+expenses = []
+for m_offset in range(5, -1, -1):
+    month_date = today.replace(day=1) - datetime.timedelta(days=m_offset*30)
+    m = month_date.month
+    y = month_date.year
+    for cat, (lo, hi) in expense_cats:
+        val = round(random.uniform(lo, hi), 2)
+        day = random.randint(1, 28)
+        expenses.append({
+            "id": len(expenses)+1,
+            "category": cat,
+            "value": val,
+            "date": f"{y:04d}-{m:02d}-{day:02d}",
+            "month": f"{y:04d}-{m:02d}",
+        })
+
+# ── Birthday list current month ───────────────────────────────────────────────
+bday = [c for c in clients if c["birthMonth"] == current_month]
+bday.sort(key=lambda c: c["birthDay"])
+
+output = {
+    "generatedAt": today.isoformat(),
+    "currentMonth": today.month,
+    "currentYear":  today.year,
+    "clients":      clients,
+    "transactions": transactions,
+    "expenses":     expenses,
+    "birthdaysThisMonth": bday,
+    "summary": {
+        "totalClients": len(clients),
+        "vip":     len([c for c in clients if c["status"]=="vip"]),
+        "active":  len([c for c in clients if c["status"]=="ativo"]),
+        "inactive":len([c for c in clients if c["status"]=="inativo"]),
+        "birthdaysCount": len(bday),
+    }
+}
+
+with open('/tmp/salon_data.json','w',encoding='utf-8') as f:
+    json.dump(output, f, ensure_ascii=False, indent=2)
+
+print(f"Clients: {len(clients)}")
+print(f"Transactions: {len(transactions)}")
+print(f"Expenses: {len(expenses)}")
+print(f"Birthdays this month ({today.month}): {len(bday)}")
+print("Birthdays:", [(c['name'], c['birthDay']) for c in bday[:5]], "...")
+PYEOF
+python3 /tmp/gen_data.py
+Saída
+
+Clients: 200
+Transactions: 1885
+Expenses: 60
+Birthdays this month (6): 20
+Birthdays: [('Zelia Fernandes', 1), ('Luana Correia', 3), ('Nadine Costa', 5), ('Bianca Campos', 6), ('Miriam Costa', 6)] ...
+Concluído
+
+
+
